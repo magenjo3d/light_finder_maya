@@ -40,11 +40,24 @@ class VersionManager:
     """Manages version control for light configurations"""
     
     def __init__(self, base_path: str = None):
-        if base_path is None:
-            base_path = str(Path.home() / "LightPublisher")
-        
-        self.base_path = Path(base_path)
-        self.base_path.mkdir(parents=True, exist_ok=True)
+        # Default path
+        default_path = str(Path.home() / "LgtFindr_maya") if base_path is None else base_path
+        env_path = os.path.join(default_path, "env.json")
+        custom_path = None
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r") as f:
+                    data = json.load(f)
+                    custom_path = data.get("custom_path")
+            except Exception as e:
+                print(f"Warning: Could not read env.json: {e}")
+        if custom_path:
+            published_lights_path = Path(custom_path) / "Published_lights"
+            published_lights_path.mkdir(parents=True, exist_ok=True)
+            self.base_path = published_lights_path
+        else:
+            self.base_path = Path(default_path)
+            self.base_path.mkdir(parents=True, exist_ok=True)
     
     def get_all_assets(self) -> List[str]:
         """Get all published light assets"""
@@ -359,10 +372,6 @@ class LightFinderFunctions:
         except Exception as e:
             print(f"Error applying properties: {e}")
             return False
-            
-        except Exception as e:
-            print(f"Error applying properties: {e}")
-            return False
 
 
 # ==================== Main UI Window ====================
@@ -510,15 +519,12 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         
         layout.addWidget(QLabel(""))
         
-        
-        
         # Publication name input
         name_layout = QHBoxLayout()
         name_layout.addWidget(QLabel("Publication Name"))
         self.pub_name_input = QTextEdit()
         self.pub_name_input.setMaximumHeight(30)
         name_layout.addWidget(self.pub_name_input, 3)
-        
         
         self.pub_name_combo = QComboBox()
         self.pub_name_combo.currentTextChanged.connect(self.on_pub_name_selected)
@@ -536,14 +542,18 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         
         layout.addWidget(QLabel(""))
         
+        # Set Custom Path button
+        set_path_btn = QPushButton("Set Custom Path")
+        set_path_btn.setStyleSheet("background-color: #555577; font-weight: bold; font-size: 12px;")
+        set_path_btn.clicked.connect(self.set_custom_path)
+        layout.addWidget(set_path_btn)
+
         # Publish button
         publish_btn = QPushButton("PUBLISH")
         publish_btn.setMinimumHeight(50)
         publish_btn.setStyleSheet("background-color: #336633; font-weight: bold; font-size: 14px;")
         publish_btn.clicked.connect(self.publish_configuration)
         layout.addWidget(publish_btn)
-        
-        
         
         return widget
     
@@ -566,8 +576,6 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
 
         layout.addWidget(instr_text)
         layout.addWidget(instr_text2)
-        
-        
         
         # Assets list with version/import controls
         assets_and_controls_layout = QHBoxLayout()
@@ -605,13 +613,27 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         load_btn.clicked.connect(self.load_configuration)
         layout.addWidget(load_btn)
         
-        
-        
         # Refresh loader on show
         self.refresh_assets()
         
         return widget
     
+    @Slot()
+    def set_custom_path(self):
+        """Set a custom base path for version management and save it to env.json"""
+        default_path = str(self.version_manager.base_path)
+        new_path, ok = QInputDialog.getText(self, "Set Custom Folder", "Enter new base folder for publications:", text=default_path)
+
+        if ok and new_path:
+            # Save the new path to env.json in the base path directory
+            env_path = os.path.join(default_path, "env.json")
+            try:
+                with open(env_path, "w") as f:
+                    json.dump({"custom_path": new_path}, f, indent=2)
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Failed to save custom path: {e}")
+            self.refresh_assets()
+
     @Slot()
     def refresh_assets(self):
         """Refresh the assets list in loader"""
@@ -656,7 +678,6 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         if selected:
             self.pub_name_input.setText(selected)
     
-    @Slot()
     @Slot()
     def publish_configuration(self):
         """Publish a light configuration"""
@@ -756,35 +777,42 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
 _current_window = None
 
 def create_light_finder_window():
-    """Create or show the Light Finder window - only one instance"""
+    """Create the Light Finder window - ensures only one instance exists at a time"""
     global _current_window
-    
+
     if not MAYA_AVAILABLE:
         cmds.confirmDialog(title="Error", message="This tool requires Maya with PySide2 support")
         return None
-    
-    # Check if window already exists and is valid
+
+    # Search ALL top-level widgets for any existing instance by object name
+    # This catches windows that slipped past our global reference (e.g. via MayaQWidgetBaseMixin)
+    app = QApplication.instance()
+    if app:
+        for widget in app.topLevelWidgets():
+            if widget.objectName() == LightFinderWindow.WINDOW_NAME:
+                try:
+                    widget.close()
+                    widget.deleteLater()
+                except:
+                    pass
+
+    # Also clean up via global reference as a safety net
     if _current_window is not None:
         try:
-            # Try to access the window to see if it's still valid
-            _current_window.isVisible()
-            # If successful, just show it
-            _current_window.show()
-            _current_window.raise_()
-            _current_window.activateWindow()
-            return _current_window
+            _current_window.close()
+            _current_window.deleteLater()
         except:
-            # Window is invalid, set to None
-            _current_window = None
-    
-    # Create new window only if one doesn't exist
+            pass
+        _current_window = None
+
+    # Create a fresh window
     window = LightFinderWindow()
     window.setObjectName(LightFinderWindow.WINDOW_NAME)
     window.show()
-    
+
     # Store reference
     _current_window = window
-    
+
     return window
 
 
