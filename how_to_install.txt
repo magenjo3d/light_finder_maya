@@ -1,0 +1,17 @@
+How to Install Light Finder + for Maya
+
+1. Copy the entire light_finder_maya folder to a location accessible by Maya.
+2. Open Maya and go to the Script Editor.
+3. In the Python tab, paste the following code:
+
+exec(open(r"path\to\light_finder_maya\LightFindr.py").read())
+
+Replace 'path\to\light_finder_maya' with the actual path where you placed the folder.
+
+4. Run the script. The Light Finder + window should appear.
+
+Optional:
+- Add the script to a Maya shelf for quick access.
+- Make sure PySide2 is available in your Maya installation.
+
+For usage instructions, see user_guide.txt.

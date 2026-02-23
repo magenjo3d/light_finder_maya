@@ -1,0 +1,20 @@
+Light Finder + User Guide
+
+Overview:
+This tool helps you publish and load light configurations in Autodesk Maya with version control.
+
+Features:
+- Publish selected lights with custom names and descriptions
+- Version management for each asset
+- Load published light setups into your scene
+- Custom path support for storing published lights
+
+Usage:
+1. Open Light Finder + in Maya.
+2. Select the lights you want to publish.
+3. Enter a publication name and optional description.
+4. Click 'Publish' to save the configuration.
+5. Use the Loader tab to select and load published assets.
+6. Use 'Set Custom Path' to change where your lights are stored.
+
+For more details, see the how_to_install.txt file.
