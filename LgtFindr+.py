@@ -283,18 +283,22 @@ class LightFinderFunctions:
                         # Try to create the light using the stored type
                         new_light = None
                         if "aiAreaLight" in light_type:
-                            new_light = cmds.createNode("aiAreaLight", name=f"{light_name}Shape")
+                            new_light = cmds.shadingNode("aiAreaLight", name=f"{light_name}Shape", asLight=True)
                         elif "aiMesh" in light_type:
-                            new_light = cmds.createNode("mesh", name=light_name)
+                            new_light = cmds.shadingNode("mesh", name=f"{light_name}Shape", asLight=True)
                         elif "directional" in light_type.lower():
                             new_light = cmds.directionalLight(name=light_name)
                         elif "point" in light_type.lower():
                             new_light = cmds.pointLight(name=light_name)
                         elif "spot" in light_type.lower():
                             new_light = cmds.spotLight(name=light_name)
+                        elif "skydome" in light_type.lower():
+                            new_light = cmds.shadingNode("aiSkyDomeLight", name=f"{light_name}Shape", asLight=True)
+                        elif "photometric" in light_type.lower():
+                            new_light = cmds.shadingNode("aiPhotometricLight", name=f"{light_name}Shape", asLight=True)
                         else:
                             # Fallback: create an area light for unknown types
-                            new_light = cmds.createNode("areaLight", name=light_name)
+                            new_light = cmds.shadingNode("areaLight", name=f"{light_name}Shape", asLight=True)
                         
                         # Get the shape node
                         if new_light:
@@ -371,6 +375,24 @@ class LightFinderFunctions:
             
         except Exception as e:
             print(f"Error applying properties: {e}")
+            return False
+
+
+    def export_selection_to_version_folder(self, asset_name: str, version: int) -> bool:
+        """Export the current Maya selection to the same folder as the JSON config for the given asset/version, named as asset_name.ma."""
+        try:
+            version_path = self.version_manager.get_version_path(asset_name, version)
+            file_name = f"{asset_name}.ma"
+            export_path = str(version_path / file_name)
+            selection = cmds.ls(selection=True)
+            if not selection:
+                print("No selection to export.")
+                return False
+            cmds.file(export_path, force=True, options="v=0", type="mayaAscii", exportSelected=True)
+            print(f"Exported selection to {export_path}")
+            return True
+        except Exception as e:
+            print(f"Error exporting selection: {e}")
             return False
 
 
@@ -610,9 +632,9 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         load_btn = QPushButton("LOAD SELECTED")
         load_btn.setMinimumHeight(50)
         load_btn.setStyleSheet("background-color: #335533; font-weight: bold; font-size: 14px;")
-        load_btn.clicked.connect(self.load_configuration)
+        load_btn.clicked.connect(self.load_configuration_import_ma)
         layout.addWidget(load_btn)
-        
+                
         # Refresh loader on show
         self.refresh_assets()
         
@@ -703,12 +725,17 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         if reply == QMessageBox.Yes:
             # Collect light properties
             config_data = self.light_finder.collect_light_properties(lights)
-            
+
             # Add description to config data
             description = self.pub_desc_input.toPlainText().strip()
             config_data["description"] = description
-            
+
+            # Publish and get the new version number
             if self.version_manager.publish_file(name, config_data):
+                # Get the latest version (just published)
+                version = self.version_manager.get_latest_version(name)
+                # Export selection to the same folder as the JSON
+                self.light_finder.export_selection_to_version_folder(name, version)
                 QMessageBox.information(self, "Success", "Version published successfully!")
                 self.refresh_assets()
             else:
@@ -733,6 +760,23 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         else:
             QMessageBox.warning(self, "Error", "Failed to load configuration")
     
+    @Slot()
+    def load_configuration_import_ma(self):
+        """Load a light configuration by importing the .ma file instead of reconstructing from JSON."""
+        if not self.current_asset or self.current_version is None:
+            QMessageBox.warning(self, "Error", "Please select an asset and version")
+            return
+        version_path = self.version_manager.get_version_path(self.current_asset, self.current_version)
+        ma_file = version_path / f"{self.current_asset}.ma"
+        if not ma_file.exists():
+            QMessageBox.warning(self, "Error", f".ma file not found: {ma_file}")
+            return
+        try:
+            cmds.file(str(ma_file), i=True, ignoreVersion=True)
+            QMessageBox.information(self, "Success", f"Imported {ma_file.name} successfully!")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to import .ma file: {e}")
+
     @Slot()
     def show_asset_info(self):
         """Show information about selected asset"""
@@ -769,6 +813,24 @@ class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
         info_text += f"Path:\n{version_path}\n"
         
         QMessageBox.information(self, "Asset Information", info_text)
+
+    @Slot()
+    def export_selection_to_version_folder(self, asset_name: str, version: int) -> bool:
+        """Export the current Maya selection to the same folder as the JSON config for the given asset/version, named as asset_name.ma."""
+        try:
+            version_path = self.version_manager.get_version_path(asset_name, version)
+            file_name = f"{asset_name}.ma"
+            export_path = str(version_path / file_name)
+            selection = cmds.ls(selection=True)
+            if not selection:
+                print("No selection to export.")
+                return False
+            cmds.file(export_path, force=True, options="v=0", type="mayaAscii", exportSelected=True)
+            print(f"Exported selection to {export_path}")
+            return True
+        except Exception as e:
+            print(f"Error exporting selection: {e}")
+            return False
 
 
 # ==================== Application Entry Point ====================
