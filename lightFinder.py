@@ -1,6 +1,6 @@
 """
 Light Finder +
-(c) 2023 - Maya PySide2/Qt Version
+(c) 2023 - Maya PySide2/PySide6 Version
 Miguel Agenjo, 3D Generalist / Lighting TD
 www.miguelagenjo.com
 
@@ -26,12 +26,13 @@ except ImportError:
 try:
     from PySide6.QtWidgets import (
         QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-        QLabel, QPushButton, QComboBox, QListWidget,
+        QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem,
         QMessageBox, QDoubleSpinBox, QSpinBox,
         QSlider, QCheckBox, QLineEdit, QScrollArea, QColorDialog,
-        QFrame, QGroupBox, QDialogButtonBox, QStyle
+        QFrame, QGroupBox, QDialogButtonBox, QStyle,
+        QTabWidget, QTextEdit, QInputDialog
     )
-    from PySide6.QtCore import Qt, Signal, QEvent, QSize
+    from PySide6.QtCore import Qt, Signal, Slot, QEvent, QSize
     from PySide6.QtGui import QFont, QColor, QIcon
     try:
         from PySide6.QtCore import QLocale
@@ -40,12 +41,13 @@ try:
 except ImportError:
     from PySide2.QtWidgets import (
         QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-        QLabel, QPushButton, QComboBox, QListWidget,
+        QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem,
         QMessageBox, QDoubleSpinBox, QSpinBox,
         QSlider, QCheckBox, QLineEdit, QScrollArea, QColorDialog,
-        QFrame, QGroupBox, QDialogButtonBox, QStyle
+        QFrame, QGroupBox, QDialogButtonBox, QStyle,
+        QTabWidget, QTextEdit, QInputDialog
     )
-    from PySide2.QtCore import Qt, Signal, QEvent, QSize, QLocale
+    from PySide2.QtCore import Qt, Signal, Slot, QEvent, QSize, QLocale
     from PySide2.QtGui import QFont, QColor, QIcon
 
 # Resolve MayaQWidgetBaseMixin base: handles both Maya 2022 (mixin without QWidget)
@@ -463,7 +465,7 @@ class LightFinderFunctions:
             return False
 
 
-# ==================== Light Finder Tab (PySide2) ====================
+# ==================== Light Finder Tab ====================
 
 class LightFinderTab(QWidget):
     """Light Finder tab with Publisher and Loader sub-tabs"""
@@ -821,7 +823,7 @@ def create_light_finder_window(base_path=None):
     global _current_window
 
     if not MAYA_AVAILABLE:
-        print("This tool requires Maya with PySide2 support")
+        print("This tool requires Maya with PySide2/PySide6 support")
         return None
 
     app = QApplication.instance()
