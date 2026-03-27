@@ -22,14 +22,31 @@ except ImportError:
     MAYA_AVAILABLE = False
     MayaQWidgetBaseMixin = object
 
-# PySide2 imports
-from PySide2.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QComboBox, QTextEdit, QListWidget, QListWidgetItem,
-    QMessageBox, QTabWidget, QInputDialog
-)
-from PySide2.QtCore import Qt, Slot
-from PySide2.QtGui import QFont
+# Qt imports – support both PySide6 (Maya 2025+) and PySide2 (Maya 2017-2024)
+try:
+    from PySide6.QtWidgets import (
+        QApplication, QWidget, QVBoxLayout, QHBoxLayout,
+        QLabel, QPushButton, QComboBox, QListWidget,
+        QMessageBox, QDoubleSpinBox, QSpinBox,
+        QSlider, QCheckBox, QLineEdit, QScrollArea, QColorDialog,
+        QFrame, QGroupBox, QDialogButtonBox, QStyle
+    )
+    from PySide6.QtCore import Qt, Signal, QEvent, QSize
+    from PySide6.QtGui import QFont, QColor, QIcon
+    try:
+        from PySide6.QtCore import QLocale
+    except ImportError:
+        QLocale = None
+except ImportError:
+    from PySide2.QtWidgets import (
+        QApplication, QWidget, QVBoxLayout, QHBoxLayout,
+        QLabel, QPushButton, QComboBox, QListWidget,
+        QMessageBox, QDoubleSpinBox, QSpinBox,
+        QSlider, QCheckBox, QLineEdit, QScrollArea, QColorDialog,
+        QFrame, QGroupBox, QDialogButtonBox, QStyle
+    )
+    from PySide2.QtCore import Qt, Signal, QEvent, QSize, QLocale
+    from PySide2.QtGui import QFont, QColor, QIcon
 
 # Resolve MayaQWidgetBaseMixin base: handles both Maya 2022 (mixin without QWidget)
 # and newer Maya versions (mixin already inherits QWidget) without MRO conflicts.
