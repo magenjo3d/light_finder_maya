@@ -31,6 +31,17 @@ from PySide2.QtWidgets import (
 from PySide2.QtCore import Qt, Slot
 from PySide2.QtGui import QFont
 
+# Resolve MayaQWidgetBaseMixin base: handles both Maya 2022 (mixin without QWidget)
+# and newer Maya versions (mixin already inherits QWidget) without MRO conflicts.
+if not MAYA_AVAILABLE:
+    MayaQWidgetBaseMixin = QWidget
+
+if QWidget in getattr(MayaQWidgetBaseMixin, '__mro__', ()):
+    _WindowBase = MayaQWidgetBaseMixin
+else:
+    class _WindowBase(MayaQWidgetBaseMixin, QWidget):
+        pass
+
 
 # ==================== Stylesheet ====================
 
@@ -746,7 +757,7 @@ class LightFinderTab(QWidget):
 
 # ==================== Main Window ====================
 
-class LightFinderWindow(MayaQWidgetBaseMixin, QWidget):
+class LightFinderWindow(_WindowBase):
     """Light Finder + standalone window - Dockable"""
 
     WINDOW_NAME = "LightFinderWindow"
