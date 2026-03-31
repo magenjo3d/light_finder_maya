@@ -8,10 +8,13 @@ exec(open(r"path\to\light_finder_maya\lightFinder.py").read())
 
 Replace 'path\to\light_finder_maya' with the actual path where you placed the folder.
 
+or:
+
+Drag and drop the lightFinder.py into a new empty Python tab.
+
 4. Run the script. The Light Finder + window should appear.
 
 Optional:
-- Add the script to a Maya shelf for quick access.
-- Make sure PySide2 is available in your Maya installation.
+- Add the script to a Maya shelf for quick access, and set the included "finder_icon" file.
 
 For usage instructions, see user_guide.txt.
